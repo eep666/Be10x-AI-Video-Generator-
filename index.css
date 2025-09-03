@@ -1,0 +1,198 @@
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+/* Reset and base styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #000;
+  overflow: hidden; /* Prevent scrollbars from canvas */
+}
+
+main {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+
+#particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #a0a0a0;
+  margin-top: -1rem;
+}
+
+/* Form Elements */
+textarea, button, .file-label {
+  width: 100%;
+  padding: 1rem;
+  font: inherit;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  transition: all 0.2s ease-in-out;
+}
+
+textarea {
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+/* Upload button styling */
+.upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+input[type="file"] {
+  display: none;
+}
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.file-label:hover {
+  background-color: #2a2a2a;
+  border-color: #555;
+}
+.file-label svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Image preview */
+img {
+  display: none;
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  margin-top: 0.5rem;
+}
+
+/* Generate button */
+#generate-button {
+  background-color: #fff;
+  color: #000;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #fff;
+}
+
+#generate-button:hover:not(:disabled) {
+  background-color: #000;
+  color: #fff;
+}
+
+#generate-button:disabled {
+  background-color: #555;
+  border-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Status and Spinner */
+#status-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 24px;
+}
+
+#status {
+    color: #a0a0a0;
+}
+
+#spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #555;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Quota Error */
+#quota-error {
+  background-color: rgba(255, 100, 100, 0.1);
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  display: none; /* Controlled by JS */
+}
+
+#quota-error p {
+  margin-bottom: 0.5rem;
+}
+#quota-error p:last-child {
+  margin-bottom: 0;
+}
+
+#open-key {
+  background: none;
+  border: 1px solid #fff;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 5px;
+}
+#open-key:hover {
+    background: #fff;
+    color: #000;
+}
+
+/* Video Player */
+video {
+  display: none;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #333;
+  margin-top: 1rem;
+}

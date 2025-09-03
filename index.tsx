@@ -114,9 +114,9 @@ promptEl.addEventListener('input', async () => {
 const statusEl = document.querySelector<HTMLElement>('#status')!;
 const spinnerEl = document.querySelector<HTMLElement>('#spinner')!;
 const video = document.querySelector<HTMLVideoElement>('#video')!;
+// FIX: Get references to new, specific error containers.
+const apiKeyErrorEl = document.querySelector<HTMLElement>('#api-key-error')!;
 const quotaErrorEl = document.querySelector<HTMLElement>('#quota-error')!;
-// FIX: Removed UI for entering API key to comply with guidelines. The 'open-key' element is assumed to be removed from HTML.
-
 
 // FIX: Cast DOM element to its specific type.
 const generateButton = document.querySelector<HTMLButtonElement>(
@@ -127,18 +127,14 @@ generateButton.addEventListener('click', (e) => {
 });
 
 async function generate() {
+  // FIX: Hide all error messages at the start of generation.
+  apiKeyErrorEl.style.display = 'none';
+  quotaErrorEl.style.display = 'none';
+
   if (!geminiApiKey) {
     statusEl.innerText = 'API Key is missing.';
-    const firstP = quotaErrorEl.querySelector('p:first-child');
-    if (firstP) {
-      // FIX: Updated error message to not prompt for key, per guidelines.
-      firstP.textContent = 'An API key is required to generate videos. Please configure it as an environment variable.';
-    }
-    const secondP = quotaErrorEl.querySelector('p:nth-child(2)');
-    if (secondP) {
-      secondP.textContent = '';
-    }
-    quotaErrorEl.style.display = 'block';
+    // FIX: Show the detailed API key instructions.
+    apiKeyErrorEl.style.display = 'block';
     return;
   }
 
@@ -149,7 +145,6 @@ async function generate() {
   generateButton.disabled = true;
   upload.disabled = true;
   promptEl.disabled = true;
-  quotaErrorEl.style.display = 'none';
 
   try {
     await generateContent(prompt, base64data);
@@ -158,7 +153,7 @@ async function generate() {
     try {
       const err = JSON.parse(e.message);
       if (err.error.code === 429) {
-        // Out of quota.
+        // FIX: Show the specific quota error message.
         quotaErrorEl.style.display = 'block';
         statusEl.innerText = 'Quota exceeded.';
       } else {

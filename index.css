@@ -159,33 +159,52 @@ img {
     }
 }
 
-/* Quota Error */
-#quota-error {
-  background-color: rgba(255, 100, 100, 0.1);
-  border: 1px solid rgba(255, 100, 100, 0.3);
-  padding: 1rem;
+/* Error Boxes */
+.error-box {
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  padding: 1.5rem;
   border-radius: 8px;
   display: none; /* Controlled by JS */
+  text-align: left;
+  margin-top: 1rem;
 }
 
-#quota-error p {
+.error-box h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #ffcccc;
+}
+
+.error-box h4 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: #f0f0f0;
+}
+
+.error-box p {
   margin-bottom: 0.5rem;
-}
-#quota-error p:last-child {
-  margin-bottom: 0;
+  line-height: 1.5;
 }
 
-#open-key {
-  background: none;
-  border: 1px solid #fff;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  border-radius: 5px;
+.error-box ol {
+    padding-left: 20px;
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
-#open-key:hover {
-    background: #fff;
-    color: #000;
+
+.error-box li {
+    line-height: 1.5;
+}
+
+.code-block {
+    background-color: #444;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #f0f0f0;
 }
 
 /* Video Player */

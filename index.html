@@ -30,10 +30,22 @@
         <p id="status">Ready.</p>
     </div>
     
-    <div id="quota-error">
-      <p>You have exceeded your daily generation quota.</p>
-      <p>To continue, please add your paid API key.</p>
-      <p><button id="open-key">Add API Key</button></p>
+    <div id="api-key-error" class="error-box">
+      <h3>API Key Configuration Required</h3>
+      <p>To use this application, please configure your Google Gemini API key in your Vercel project settings.</p>
+      <h4>Instructions for Vercel:</h4>
+      <ol>
+        <li>Go to your project's dashboard on Vercel.</li>
+        <li>Navigate to the <strong>Settings</strong> tab.</li>
+        <li>Click on <strong>Environment Variables</strong> in the side menu.</li>
+        <li>Create a new variable with the name <code class="code-block">API_KEY</code>.</li>
+        <li>Paste your Google Gemini API key into the value field.</li>
+        <li>Click <strong>Save</strong> and then <strong>redeploy</strong> your project for the changes to take effect.</li>
+      </ol>
+    </div>
+    
+    <div id="quota-error" class="error-box">
+      <p>You have exceeded your daily generation quota. Please try again later or check your Google AI Studio billing.</p>
     </div>
     
     <video id="video" autoplay loop controls></video>

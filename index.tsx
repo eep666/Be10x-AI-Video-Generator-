@@ -6,20 +6,17 @@
  */
 import { GoogleGenAI } from 'https://esm.sh/@google/genai@^1.4.0';
 
-// FIX: API key should be a constant and not user-modifiable through the UI.
-const geminiApiKey = process.env.API_KEY;
+// App's API Key. Prioritizes environment variables, falls back to local storage.
+let geminiApiKey = process.env.API_KEY;
 
-// FIX: Added type annotation for ms parameter.
 async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// FIX: Added type annotations for blob parameter and return value.
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise(async (resolve) => {
     const reader = new FileReader();
     reader.onload = () => {
-      // FIX: Cast reader.result to string to safely call split method.
       const url = reader.result as string;
       resolve(url.split(',')[1]);
     };
@@ -27,7 +24,6 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-// FIX: Added type annotations for parameters.
 function downloadFile(url: string, filename: string) {
   const a = document.createElement('a');
   a.href = url;
@@ -38,11 +34,12 @@ function downloadFile(url: string, filename: string) {
   document.body.removeChild(a);
 }
 
-// FIX: Added type annotations for parameters.
 async function generateContent(prompt: string, imageBytes: string) {
+  if (!geminiApiKey) {
+    throw new Error('API Key is missing.');
+  }
   const ai = new GoogleGenAI({apiKey: geminiApiKey});
 
-  // FIX: Use 'any' type for config object to allow conditional property assignment.
   const config: any = {
     model: 'veo-2.0-generate-001',
     prompt,
@@ -73,12 +70,10 @@ async function generateContent(prompt: string, imageBytes: string) {
 
   videos.forEach(async (v, i) => {
     const url = decodeURIComponent(v.video.uri);
-    // FIX: Appended API key to the video download URL as required.
     const res = await fetch(`${url}&key=${geminiApiKey}`);
     const blob = await res.blob();
     const objectURL = URL.createObjectURL(blob);
     downloadFile(objectURL, `video${i}.mp4`);
-    // FIX: Ensure video element is not null before accessing properties.
     if (video) {
       video.src = objectURL;
       console.log('Downloaded video', `video${i}.mp4`);
@@ -87,14 +82,13 @@ async function generateContent(prompt: string, imageBytes: string) {
   });
 }
 
-// FIX: Cast DOM elements to their specific types to resolve property access errors.
+// DOM Element selections
 const upload = document.querySelector<HTMLInputElement>('#file-input')!;
 const imgPreview = document.querySelector<HTMLImageElement>('#img')!;
 let base64data = '';
 let prompt = '';
 
 upload.addEventListener('change', async (e) => {
-  // FIX: Cast e.target to HTMLInputElement to access files property.
   const target = e.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file) {
@@ -104,21 +98,19 @@ upload.addEventListener('change', async (e) => {
   }
 });
 
-// FIX: Cast DOM element to its specific type.
 const promptEl = document.querySelector<HTMLInputElement>('#prompt-input')!;
 promptEl.addEventListener('input', async () => {
   prompt = promptEl.value;
 });
 
-// FIX: Cast DOM elements to their specific types.
 const statusEl = document.querySelector<HTMLElement>('#status')!;
 const spinnerEl = document.querySelector<HTMLElement>('#spinner')!;
 const video = document.querySelector<HTMLVideoElement>('#video')!;
-// FIX: Get references to new, specific error containers.
 const apiKeyErrorEl = document.querySelector<HTMLElement>('#api-key-error')!;
 const quotaErrorEl = document.querySelector<HTMLElement>('#quota-error')!;
+const apiKeyInput = document.querySelector<HTMLInputElement>('#api-key-input')!;
+const saveApiKeyButton = document.querySelector<HTMLButtonElement>('#save-api-key-button')!;
 
-// FIX: Cast DOM element to its specific type.
 const generateButton = document.querySelector<HTMLButtonElement>(
   '#generate-button',
 )!;
@@ -128,23 +120,18 @@ generateButton.addEventListener('click', (e) => {
 
 async function generate() {
   quotaErrorEl.style.display = 'none';
-
   statusEl.innerText = 'Generating...';
   spinnerEl.style.display = 'block';
   video.style.display = 'none';
-
-  generateButton.disabled = true;
-  upload.disabled = true;
-  promptEl.disabled = true;
+  setFormEnabled(false);
 
   try {
     await generateContent(prompt, base64data);
     statusEl.innerText = 'Done.';
-  } catch (e: any) { // FIX: Typed error object.
+  } catch (e: any) {
     try {
       const err = JSON.parse(e.message);
       if (err.error.code === 429) {
-        // FIX: Show the specific quota error message.
         quotaErrorEl.style.display = 'block';
         statusEl.innerText = 'Quota exceeded.';
       } else {
@@ -157,13 +144,10 @@ async function generate() {
   }
 
   spinnerEl.style.display = 'none';
-  generateButton.disabled = false;
-  upload.disabled = false;
-  promptEl.disabled = false;
+  setFormEnabled(true);
 }
 
 // --- Particle background animation ---
-// FIX: Cast canvas element to HTMLCanvasElement.
 const canvas = document.getElementById('particles-js') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 canvas.width = window.innerWidth;
@@ -174,11 +158,10 @@ let particlesArray: Particle[];
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  init(); // Re-initialize particles on resize
+  initParticles(); 
 });
 
 class Particle {
-  // FIX: Declared class properties with types.
   x: number;
   y: number;
   directionX: number;
@@ -209,14 +192,13 @@ class Particle {
     if (this.y > canvas.height || this.y < 0) {
       this.directionY = -this.directionY;
     }
-
     this.x += this.directionX;
     this.y += this.directionY;
     this.draw();
   }
 }
 
-function init() {
+function initParticles() {
   particlesArray = [];
   let numberOfParticles = (canvas.height * canvas.width) / 9000;
   for (let i = 0; i < numberOfParticles; i++) {
@@ -226,22 +208,17 @@ function init() {
     let directionX = Math.random() * 0.4 - 0.2;
     let directionY = Math.random() * 0.4 - 0.2;
     let color = 'rgba(255,255,255,0.8)';
-
-    particlesArray.push(
-      new Particle(x, y, directionX, directionY, size, color),
-    );
+    particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
   }
 }
 
-function connect() {
+function connectParticles() {
   let opacityValue = 1;
   for (let a = 0; a < particlesArray.length; a++) {
     for (let b = a; b < particlesArray.length; b++) {
       let distance =
-        (particlesArray[a].x - particlesArray[b].x) *
-          (particlesArray[a].x - particlesArray[b].x) +
-        (particlesArray[a].y - particlesArray[b].y) *
-          (particlesArray[a].y - particlesArray[b].y);
+        (particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x) +
+        (particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y);
       if (distance < (canvas.width / 8) * (canvas.height / 8)) {
         opacityValue = 1 - distance / 20000;
         ctx.strokeStyle = `rgba(255,255,255,${opacityValue})`;
@@ -255,26 +232,47 @@ function connect() {
   }
 }
 
-function animate() {
-  requestAnimationFrame(animate);
+function animateParticles() {
+  requestAnimationFrame(animateParticles);
   ctx.clearRect(0, 0, innerWidth, innerHeight);
-
   for (let i = 0; i < particlesArray.length; i++) {
     particlesArray[i].update();
   }
-  connect();
+  connectParticles();
 }
 
+// --- App Initialization and UI Logic ---
+
+function setFormEnabled(isEnabled: boolean) {
+    generateButton.disabled = !isEnabled;
+    upload.disabled = !isEnabled;
+    promptEl.disabled = !isEnabled;
+}
+
+saveApiKeyButton.addEventListener('click', () => {
+    const key = apiKeyInput.value.trim();
+    if (key) {
+        localStorage.setItem('gemini_api_key', key);
+        geminiApiKey = key;
+        apiKeyErrorEl.style.display = 'none';
+        setFormEnabled(true);
+        statusEl.innerText = 'API Key saved. Ready.';
+    }
+});
+
+
 function initializeApp() {
+  geminiApiKey = process.env.API_KEY || localStorage.getItem('gemini_api_key');
   if (!geminiApiKey) {
     apiKeyErrorEl.style.display = 'block';
     statusEl.innerText = 'API Key not configured.';
-    generateButton.disabled = true;
-    upload.disabled = true;
-    promptEl.disabled = true;
+    setFormEnabled(false);
+  } else {
+    setFormEnabled(true);
+    statusEl.innerText = 'Ready.';
   }
 }
 
-init();
-animate();
+initParticles();
+animateParticles();
 initializeApp();

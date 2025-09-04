@@ -127,16 +127,7 @@ generateButton.addEventListener('click', (e) => {
 });
 
 async function generate() {
-  // FIX: Hide all error messages at the start of generation.
-  apiKeyErrorEl.style.display = 'none';
   quotaErrorEl.style.display = 'none';
-
-  if (!geminiApiKey) {
-    statusEl.innerText = 'API Key is missing.';
-    // FIX: Show the detailed API key instructions.
-    apiKeyErrorEl.style.display = 'block';
-    return;
-  }
 
   statusEl.innerText = 'Generating...';
   spinnerEl.style.display = 'block';
@@ -274,5 +265,16 @@ function animate() {
   connect();
 }
 
+function initializeApp() {
+  if (!geminiApiKey) {
+    apiKeyErrorEl.style.display = 'block';
+    statusEl.innerText = 'API Key not configured.';
+    generateButton.disabled = true;
+    upload.disabled = true;
+    promptEl.disabled = true;
+  }
+}
+
 init();
 animate();
+initializeApp();

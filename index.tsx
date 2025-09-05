@@ -145,8 +145,21 @@ async function generate() {
     statusEl.innerText = 'Done.';
   } catch (e: any) {
     console.error(e);
-    const errorMessage = e.message || 'An unknown error occurred. Please try again.';
-    errorMessageEl.innerText = errorMessage;
+    let friendlyMessage = e.message || 'An unknown error occurred. Please try again.';
+    
+    // Try to parse the message as JSON to get a cleaner error.
+    try {
+      // The error from the backend might be a stringified JSON.
+      const errorObj = JSON.parse(friendlyMessage);
+      if (errorObj && errorObj.message) {
+        // If it has a message property, use that.
+        friendlyMessage = errorObj.message;
+      }
+    } catch (parseError) {
+      // It's not a JSON string, so we'll just display the original message.
+    }
+
+    errorMessageEl.innerText = friendlyMessage;
     errorBoxEl.style.display = 'block';
     statusEl.innerText = 'Error.';
   } finally {

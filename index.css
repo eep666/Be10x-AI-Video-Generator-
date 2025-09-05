@@ -170,82 +170,10 @@ img {
   margin-top: 1rem;
 }
 
-.error-box h3 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
-  color: #ffcccc;
-}
-
-.error-box h4 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: #f0f0f0;
-}
-
 .error-box p {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
   line-height: 1.5;
 }
-
-.error-box ol {
-    padding-left: 20px;
-    margin-top: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.error-box li {
-    line-height: 1.5;
-}
-
-.code-block {
-    background-color: #444;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-    color: #f0f0f0;
-}
-
-/* API Key Input Styles */
-.api-key-input-container {
-  display: flex;
-  gap: 0.5rem;
-  margin: 1rem 0;
-}
-
-#api-key-input {
-  flex-grow: 1;
-  background-color: #333;
-  border: 1px solid #555;
-  border-radius: 6px;
-  padding: 0.75rem;
-  color: #f0f0f0;
-  font-family: inherit;
-}
-
-#api-key-input:focus {
-  outline: none;
-  border-color: #fff;
-}
-
-#save-api-key-button {
-  flex-shrink: 0;
-  width: auto;
-  padding: 0.75rem 1rem;
-  background-color: #f0f0f0;
-  color: #111;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-#save-api-key-button:hover {
-  background-color: #ccc;
-}
-
 
 /* Video Player */
 video {

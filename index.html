@@ -29,26 +29,13 @@
         <div id="spinner" style="display: none;"></div>
         <p id="status">Ready.</p>
     </div>
-    
-    <div id="api-key-error" class="error-box">
-      <h3>API Key Required</h3>
-      <p>Please enter your Google Gemini API key below to use the generator. Your key is stored securely in your browser's local storage and is never sent to our servers.</p>
-      <div class="api-key-input-container">
-          <input type="password" id="api-key-input" placeholder="Enter your Google Gemini API Key">
-          <button id="save-api-key-button">Save Key</button>
-      </div>
-      <h4>Recommended: Use Environment Variables</h4>
-      <p>For a more permanent setup, especially when deploying your own version, configure your key as an environment variable in your Vercel project settings:</p>
-      <ol>
-        <li>Go to your project's dashboard on Vercel and navigate to <strong>Settings &gt; Environment Variables</strong>.</li>
-        <li>Create a new variable with the name <code class="code-block">API_KEY</code>.</li>
-        <li>Paste your Google Gemini API key into the value field.</li>
-        <li>Save and redeploy your project.</li>
-      </ol>
-    </div>
-    
+        
     <div id="quota-error" class="error-box">
-      <p>You have exceeded your daily generation quota. Please try again later or check your Google AI Studio billing.</p>
+      <p id="quota-error-message">You have exceeded your daily generation quota. Please try again later or check your Google AI Studio billing.</p>
+    </div>
+
+    <div id="api-error" class="error-box">
+      <p id="api-error-message"></p>
     </div>
     
     <video id="video" autoplay loop controls></video>

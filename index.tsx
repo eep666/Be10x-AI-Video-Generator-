@@ -6,9 +6,6 @@
  */
 import { GoogleGenAI } from 'https://esm.sh/@google/genai@^1.4.0';
 
-// App's API Key. Prioritizes environment variables, falls back to local storage.
-let geminiApiKey = process.env.API_KEY;
-
 async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -35,10 +32,7 @@ function downloadFile(url: string, filename: string) {
 }
 
 async function generateContent(prompt: string, imageBytes: string) {
-  if (!geminiApiKey) {
-    throw new Error('API Key is missing.');
-  }
-  const ai = new GoogleGenAI({apiKey: geminiApiKey});
+  const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
 
   const config: any = {
     model: 'veo-2.0-generate-001',
@@ -70,7 +64,7 @@ async function generateContent(prompt: string, imageBytes: string) {
 
   videos.forEach(async (v, i) => {
     const url = decodeURIComponent(v.video.uri);
-    const res = await fetch(`${url}&key=${geminiApiKey}`);
+    const res = await fetch(`${url}&key=${process.env.API_KEY}`);
     const blob = await res.blob();
     const objectURL = URL.createObjectURL(blob);
     downloadFile(objectURL, `video${i}.mp4`);
@@ -106,10 +100,10 @@ promptEl.addEventListener('input', async () => {
 const statusEl = document.querySelector<HTMLElement>('#status')!;
 const spinnerEl = document.querySelector<HTMLElement>('#spinner')!;
 const video = document.querySelector<HTMLVideoElement>('#video')!;
-const apiKeyErrorEl = document.querySelector<HTMLElement>('#api-key-error')!;
 const quotaErrorEl = document.querySelector<HTMLElement>('#quota-error')!;
-const apiKeyInput = document.querySelector<HTMLInputElement>('#api-key-input')!;
-const saveApiKeyButton = document.querySelector<HTMLButtonElement>('#save-api-key-button')!;
+const quotaErrorMessageEl = document.querySelector<HTMLElement>('#quota-error-message')!;
+const apiErrorEl = document.querySelector<HTMLElement>('#api-error')!;
+const apiErrorMessageEl = document.querySelector<HTMLElement>('#api-error-message')!;
 
 const generateButton = document.querySelector<HTMLButtonElement>(
   '#generate-button',
@@ -120,6 +114,23 @@ generateButton.addEventListener('click', (e) => {
 
 async function generate() {
   quotaErrorEl.style.display = 'none';
+  apiErrorEl.style.display = 'none';
+
+  if (!process.env.API_KEY) {
+    apiErrorMessageEl.innerText =
+      'API Key is not configured. Please ensure the API_KEY environment variable is set.';
+    apiErrorEl.style.display = 'block';
+    statusEl.innerText = 'Error: API Key not set.';
+    return;
+  }
+
+  if (!prompt.trim()) {
+    apiErrorMessageEl.innerText = 'Please enter a prompt to generate a video.';
+    apiErrorEl.style.display = 'block';
+    statusEl.innerText = 'Text to video requires prompt to be set.';
+    return;
+  }
+
   statusEl.innerText = 'Generating...';
   spinnerEl.style.display = 'block';
   video.style.display = 'none';
@@ -129,22 +140,54 @@ async function generate() {
     await generateContent(prompt, base64data);
     statusEl.innerText = 'Done.';
   } catch (e: any) {
-    try {
-      const err = JSON.parse(e.message);
-      if (err.error.code === 429) {
-        quotaErrorEl.style.display = 'block';
-        statusEl.innerText = 'Quota exceeded.';
-      } else {
-        statusEl.innerText = err.error.message;
-      }
-    } catch (err) {
-      statusEl.innerText = e.message;
-      console.log('error', e.message);
-    }
-  }
+    console.error(e);
+    let errorMessage = 'Failed to call the Gemini API. Please try again.';
+    let isQuotaError = false;
 
-  spinnerEl.style.display = 'none';
-  setFormEnabled(true);
+    if (e && e.message) {
+      let errorDetails;
+      try {
+        // Attempt to parse the full message as JSON
+        errorDetails = JSON.parse(e.message);
+      } catch (parseError) {
+        // If that fails, look for an embedded JSON object
+        const jsonMatch = e.message.match(/{.*}/s);
+        if (jsonMatch && jsonMatch[0]) {
+          try {
+            errorDetails = JSON.parse(jsonMatch[0]);
+          } catch (innerParseError) {
+            errorMessage = e.message; // Use raw message if inner parse fails
+          }
+        } else {
+          errorMessage = e.message; // Use raw message if no JSON found
+        }
+      }
+
+      if (errorDetails && errorDetails.error) {
+        errorMessage = errorDetails.error.message || errorMessage;
+        if (errorDetails.error.code === 429 || errorDetails.error.status === 'RESOURCE_EXHAUSTED') {
+          isQuotaError = true;
+        }
+      } else if (typeof e.message === 'string' && (e.message.includes('429') || e.message.toLowerCase().includes('quota'))) {
+        // Fallback check on the raw string message
+        isQuotaError = true;
+        errorMessage = e.message;
+      }
+    }
+
+    if (isQuotaError) {
+      quotaErrorMessageEl.innerText = errorMessage;
+      quotaErrorEl.style.display = 'block';
+      statusEl.innerText = 'Quota exceeded.';
+    } else {
+      apiErrorMessageEl.innerText = errorMessage;
+      apiErrorEl.style.display = 'block';
+      statusEl.innerText = 'Error.';
+    }
+  } finally {
+    spinnerEl.style.display = 'none';
+    setFormEnabled(true);
+  }
 }
 
 // --- Particle background animation ---
@@ -249,30 +292,6 @@ function setFormEnabled(isEnabled: boolean) {
     promptEl.disabled = !isEnabled;
 }
 
-saveApiKeyButton.addEventListener('click', () => {
-    const key = apiKeyInput.value.trim();
-    if (key) {
-        localStorage.setItem('gemini_api_key', key);
-        geminiApiKey = key;
-        apiKeyErrorEl.style.display = 'none';
-        setFormEnabled(true);
-        statusEl.innerText = 'API Key saved. Ready.';
-    }
-});
-
-
-function initializeApp() {
-  geminiApiKey = process.env.API_KEY || localStorage.getItem('gemini_api_key');
-  if (!geminiApiKey) {
-    apiKeyErrorEl.style.display = 'block';
-    statusEl.innerText = 'API Key not configured.';
-    setFormEnabled(false);
-  } else {
-    setFormEnabled(true);
-    statusEl.innerText = 'Ready.';
-  }
-}
-
 initParticles();
 animateParticles();
-initializeApp();
+statusEl.innerText = 'Ready.';

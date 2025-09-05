@@ -96,7 +96,6 @@ async function generateContent(prompt: string, imageBytes: string) {
 const upload = document.querySelector<HTMLInputElement>('#file-input')!;
 const imgPreview = document.querySelector<HTMLImageElement>('#img')!;
 let base64data = '';
-// FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
 let userPrompt = '';
 
 upload.addEventListener('change', async (e) => {
@@ -111,17 +110,14 @@ upload.addEventListener('change', async (e) => {
 
 const promptEl = document.querySelector<HTMLInputElement>('#prompt-input')!;
 promptEl.addEventListener('input', async () => {
-  // FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
   userPrompt = promptEl.value;
 });
 
 const statusEl = document.querySelector<HTMLElement>('#status')!;
 const spinnerEl = document.querySelector<HTMLElement>('#spinner')!;
 const video = document.querySelector<HTMLVideoElement>('#video')!;
-const quotaErrorEl = document.querySelector<HTMLElement>('#quota-error')!;
-const quotaErrorMessageEl = document.querySelector<HTMLElement>('#quota-error-message')!;
-const apiErrorEl = document.querySelector<HTMLElement>('#api-error')!;
-const apiErrorMessageEl = document.querySelector<HTMLElement>('#api-error-message')!;
+const errorBoxEl = document.querySelector<HTMLElement>('#error-box')!;
+const errorMessageEl = document.querySelector<HTMLElement>('#error-message')!;
 
 const generateButton = document.querySelector<HTMLButtonElement>(
   '#generate-button',
@@ -131,13 +127,11 @@ generateButton.addEventListener('click', (e) => {
 });
 
 async function generate() {
-  quotaErrorEl.style.display = 'none';
-  apiErrorEl.style.display = 'none';
+  errorBoxEl.style.display = 'none';
 
-  // FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
   if (!userPrompt.trim()) {
-    apiErrorMessageEl.innerText = 'Please enter a prompt to generate a video.';
-    apiErrorEl.style.display = 'block';
+    errorMessageEl.innerText = 'Please enter a prompt to generate a video.';
+    errorBoxEl.style.display = 'block';
     return;
   }
 
@@ -147,25 +141,14 @@ async function generate() {
   setFormEnabled(false);
 
   try {
-    // FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
     await generateContent(userPrompt, base64data);
     statusEl.innerText = 'Done.';
   } catch (e: any) {
     console.error(e);
     const errorMessage = e.message || 'An unknown error occurred. Please try again.';
-    
-    const isQuotaError = typeof errorMessage === 'string' && 
-        (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('resource_exhausted'));
-
-    if (isQuotaError) {
-      quotaErrorMessageEl.innerText = errorMessage;
-      quotaErrorEl.style.display = 'block';
-      statusEl.innerText = 'Quota exceeded.';
-    } else {
-      apiErrorMessageEl.innerText = errorMessage;
-      apiErrorEl.style.display = 'block';
-      statusEl.innerText = 'Error.';
-    }
+    errorMessageEl.innerText = errorMessage;
+    errorBoxEl.style.display = 'block';
+    statusEl.innerText = 'Error.';
   } finally {
     spinnerEl.style.display = 'none';
     setFormEnabled(true);

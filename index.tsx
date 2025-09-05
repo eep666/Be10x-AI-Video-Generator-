@@ -4,7 +4,6 @@
  * Copyright 2025 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
-import { GoogleGenAI } from 'https://esm.sh/@google/genai@^1.4.0';
 
 async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,45 +31,62 @@ function downloadFile(url: string, filename: string) {
 }
 
 async function generateContent(prompt: string, imageBytes: string) {
-  const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+  // 1. Call our serverless function to start the generation
+  const generateResponse = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, imageBytes: imageBytes || null }),
+  });
 
-  const config: any = {
-    model: 'veo-2.0-generate-001',
-    prompt,
-    config: {
-      numberOfVideos: 1,
-    },
-  };
-
-  if (imageBytes) {
-    config.image = {
-      imageBytes,
-      mimeType: 'image/png',
-    };
+  if (!generateResponse.ok) {
+    const error = await generateResponse.json();
+    throw new Error(error.error || 'Failed to start video generation.');
   }
 
-  let operation = await ai.models.generateVideos(config);
+  let { operation } = await generateResponse.json();
 
+  // 2. Poll the status endpoint until the operation is done
   while (!operation.done) {
-    console.log('Waiting for completion');
-    await delay(1000);
-    operation = await ai.operations.getVideosOperation({operation});
+    statusEl.innerText = 'Generating video... this may take a few minutes.';
+    console.log('Polling for video generation status...');
+    await delay(10000); // Poll every 10 seconds
+
+    const statusResponse = await fetch('/api/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation }),
+    });
+
+    if (!statusResponse.ok) {
+      const error = await statusResponse.json();
+      throw new Error(error.error || 'Failed to check video generation status.');
+    }
+    
+    const statusResult = await statusResponse.json();
+    operation = statusResult.operation;
   }
 
   const videos = operation.response?.generatedVideos;
   if (videos === undefined || videos.length === 0) {
-    throw new Error('No videos generated');
+    throw new Error('No videos were generated, or the operation failed.');
   }
 
-  videos.forEach(async (v, i) => {
-    const url = decodeURIComponent(v.video.uri);
-    const res = await fetch(`${url}&key=${process.env.API_KEY}`);
+  // 3. Download the generated video via our download proxy
+  videos.forEach(async (v: any, i: number) => {
+    statusEl.innerText = 'Downloading video...';
+    const downloadUrl = `/api/download?uri=${encodeURIComponent(v.video.uri)}`;
+    const res = await fetch(downloadUrl);
+    
+    if (!res.ok) {
+        console.error('Failed to download video file.');
+        throw new Error('Could not download the generated video.');
+    }
+
     const blob = await res.blob();
     const objectURL = URL.createObjectURL(blob);
     downloadFile(objectURL, `video${i}.mp4`);
     if (video) {
       video.src = objectURL;
-      console.log('Downloaded video', `video${i}.mp4`);
       video.style.display = 'block';
     }
   });
@@ -80,7 +96,8 @@ async function generateContent(prompt: string, imageBytes: string) {
 const upload = document.querySelector<HTMLInputElement>('#file-input')!;
 const imgPreview = document.querySelector<HTMLImageElement>('#img')!;
 let base64data = '';
-let prompt = '';
+// FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
+let userPrompt = '';
 
 upload.addEventListener('change', async (e) => {
   const target = e.target as HTMLInputElement;
@@ -94,7 +111,8 @@ upload.addEventListener('change', async (e) => {
 
 const promptEl = document.querySelector<HTMLInputElement>('#prompt-input')!;
 promptEl.addEventListener('input', async () => {
-  prompt = promptEl.value;
+  // FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
+  userPrompt = promptEl.value;
 });
 
 const statusEl = document.querySelector<HTMLElement>('#status')!;
@@ -116,64 +134,28 @@ async function generate() {
   quotaErrorEl.style.display = 'none';
   apiErrorEl.style.display = 'none';
 
-  if (!process.env.API_KEY) {
-    apiErrorMessageEl.innerText =
-      'API Key is not configured. Please ensure the API_KEY environment variable is set.';
-    apiErrorEl.style.display = 'block';
-    statusEl.innerText = 'Error: API Key not set.';
-    return;
-  }
-
-  if (!prompt.trim()) {
+  // FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
+  if (!userPrompt.trim()) {
     apiErrorMessageEl.innerText = 'Please enter a prompt to generate a video.';
     apiErrorEl.style.display = 'block';
-    statusEl.innerText = 'Text to video requires prompt to be set.';
     return;
   }
 
-  statusEl.innerText = 'Generating...';
+  statusEl.innerText = 'Initializing...';
   spinnerEl.style.display = 'block';
   video.style.display = 'none';
   setFormEnabled(false);
 
   try {
-    await generateContent(prompt, base64data);
+    // FIX: Rename `prompt` to `userPrompt` to avoid conflict with `window.prompt`.
+    await generateContent(userPrompt, base64data);
     statusEl.innerText = 'Done.';
   } catch (e: any) {
     console.error(e);
-    let errorMessage = 'Failed to call the Gemini API. Please try again.';
-    let isQuotaError = false;
-
-    if (e && e.message) {
-      let errorDetails;
-      try {
-        // Attempt to parse the full message as JSON
-        errorDetails = JSON.parse(e.message);
-      } catch (parseError) {
-        // If that fails, look for an embedded JSON object
-        const jsonMatch = e.message.match(/{.*}/s);
-        if (jsonMatch && jsonMatch[0]) {
-          try {
-            errorDetails = JSON.parse(jsonMatch[0]);
-          } catch (innerParseError) {
-            errorMessage = e.message; // Use raw message if inner parse fails
-          }
-        } else {
-          errorMessage = e.message; // Use raw message if no JSON found
-        }
-      }
-
-      if (errorDetails && errorDetails.error) {
-        errorMessage = errorDetails.error.message || errorMessage;
-        if (errorDetails.error.code === 429 || errorDetails.error.status === 'RESOURCE_EXHAUSTED') {
-          isQuotaError = true;
-        }
-      } else if (typeof e.message === 'string' && (e.message.includes('429') || e.message.toLowerCase().includes('quota'))) {
-        // Fallback check on the raw string message
-        isQuotaError = true;
-        errorMessage = e.message;
-      }
-    }
+    const errorMessage = e.message || 'An unknown error occurred. Please try again.';
+    
+    const isQuotaError = typeof errorMessage === 'string' && 
+        (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('resource_exhausted'));
 
     if (isQuotaError) {
       quotaErrorMessageEl.innerText = errorMessage;
